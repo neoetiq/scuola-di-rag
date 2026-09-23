@@ -1,0 +1,59 @@
+# Eval set: one JSON per line. doc_code = manual, pages = pages that contain the answer. Lines starting with # are ignored.
+# --- IT manual P985 THERMO (H072521IT0), questions in Italian
+{"q": "Qual è la potenza termica nominale della stufa P985 Thermo?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Quanto pesa la stufa con il rivestimento?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Che diametro ha lo scarico fumi della P985?", "doc_code": "H072521IT0", "pages": [10, 12], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Quanti kg di pellet contiene il serbatoio?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Qual è la pressione di precarica del vaso di espansione?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Che caratteristiche deve avere il pellet da usare (diametro, umidità)?", "doc_code": "H072521IT0", "pages": [13], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Quale sezione minima deve avere la presa d'aria esterna?", "doc_code": "H072521IT0", "pages": [10, 15], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Quali requisiti deve rispettare il camino a cui collego la stufa?", "doc_code": "H072521IT0", "pages": [15, 16], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Quali sono le distanze minime di sicurezza da materiali combustibili?", "doc_code": "H072521IT0", "pages": [10, 20], "lang": "it", "type": "table", "product": "P985 Thermo"}
+{"q": "Come si collega un termostato ambiente esterno alla stufa?", "doc_code": "H072521IT0", "pages": [26], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Cosa devo fare se l'acqua dell'impianto è troppo dura?", "doc_code": "H072521IT0", "pages": [24], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Come si sostituisce il fusibile sulla presa del cavo di alimentazione?", "doc_code": "H072521IT0", "pages": [34], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "Come si riarma il termostato di sicurezza a riarmo manuale?", "doc_code": "H072521IT0", "pages": [34, 8], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "Cosa devo fare a fine stagione se la stufa resta ferma a lungo?", "doc_code": "H072521IT0", "pages": [35], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "Ogni quanto tempo va eseguita la manutenzione programmata?", "doc_code": "H072521IT0", "pages": [29], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Come si pulisce il vetro della porta?", "doc_code": "H072521IT0", "pages": [30], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "A cosa serve il pressostato?", "doc_code": "H072521IT0", "pages": [8], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+{"q": "Come si riempie l'impianto idraulico di riscaldamento?", "doc_code": "H072521IT0", "pages": [23], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "Come si pulisce il ventilatore dei fumi?", "doc_code": "H072521IT0", "pages": [33], "lang": "it", "type": "procedure", "product": "P985 Thermo"}
+{"q": "La stufa può essere installata in camera da letto?", "doc_code": "H072521IT0", "pages": [14], "lang": "it", "type": "prose", "product": "P985 Thermo"}
+# --- cross-lingual: English questions on the Italian manual
+{"q": "What is the minimum chimney draught required for the P985 Thermo?", "doc_code": "H072521IT0", "pages": [10], "lang": "en", "type": "table", "cross": true, "product": "P985 Thermo"}
+{"q": "How do I clean the flue gas fan of the P985?", "doc_code": "H072521IT0", "pages": [33], "lang": "en", "type": "procedure", "cross": true, "product": "P985 Thermo"}
+{"q": "What are the hydraulic connections of the boiler stove?", "doc_code": "H072521IT0", "pages": [21, 22, 12], "lang": "en", "type": "prose", "cross": true, "product": "P985 Thermo"}
+# --- EN manual FWTR00 operating instructions (H072510EN0), questions in English
+{"q": "What is the range of the remote control?", "doc_code": "H072510EN0", "pages": [7], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "How do I change the batteries of the remote control unit?", "doc_code": "H072510EN0", "pages": [8], "lang": "en", "type": "procedure", "product": "FWTR00 remote control"}
+{"q": "How do I change the display language?", "doc_code": "H072510EN0", "pages": [8], "lang": "en", "type": "procedure", "product": "FWTR00 remote control"}
+{"q": "What should I do before the first start-up of the appliance?", "doc_code": "H072510EN0", "pages": [9, 10], "lang": "en", "type": "procedure", "product": "FWTR00 remote control"}
+{"q": "How many programs can the CHRONO timer store?", "doc_code": "H072510EN0", "pages": [15, 16], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "At what water temperature does the anti-freeze function activate?", "doc_code": "H072510EN0", "pages": [22], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "What is the WATER PRESSURE menu used for?", "doc_code": "H072510EN0", "pages": [20], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "What is the DISINFECT function for?", "doc_code": "H072510EN0", "pages": [23], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "How do I change the boiler water temperature set point?", "doc_code": "H072510EN0", "pages": [11], "lang": "en", "type": "procedure", "product": "FWTR00 remote control"}
+{"q": "Which fuel can be used in this appliance?", "doc_code": "H072510EN0", "pages": [6], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "What does the SEASON function do?", "doc_code": "H072510EN0", "pages": [15], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+{"q": "How do I set the date and time?", "doc_code": "H072510EN0", "pages": [14], "lang": "en", "type": "procedure", "product": "FWTR00 remote control"}
+{"q": "How does the stove behave in adverse weather conditions?", "doc_code": "H072510EN0", "pages": [12], "lang": "en", "type": "prose", "product": "FWTR00 remote control"}
+# --- cross-lingual: Italian questions on the English manual
+{"q": "Come si cambia la lingua del telecomando?", "doc_code": "H072510EN0", "pages": [8], "lang": "it", "type": "procedure", "cross": true, "product": "FWTR00 remote control"}
+{"q": "Cosa fa la funzione ENERGY SAVING sull'acqua (ENERGY H2O)?", "doc_code": "H072510EN0", "pages": [17], "lang": "it", "type": "prose", "cross": true, "product": "FWTR00 remote control"}
+{"q": "Come si attiva il funzionamento con termostato esterno dal menu installatore?", "doc_code": "H072510EN0", "pages": [19], "lang": "it", "type": "procedure", "cross": true, "product": "FWTR00 remote control"}
+{"q": "Cosa succede se la stufa si ferma sulla schermata STAND-BY?", "doc_code": "H072510EN0", "pages": [12], "lang": "it", "type": "prose", "cross": true, "product": "FWTR00 remote control"}
+# --- alarm codes / messages (codes are a hard case for dense embeddings)
+{"q": "What does warning E2 mean and what should I do?", "doc_code": "H072510EN0", "pages": [28], "lang": "en", "type": "code", "product": "FWTR00 remote control"}
+{"q": "Cosa significa l'allarme E8?", "doc_code": "H072510EN0", "pages": [29], "lang": "it", "type": "code", "cross": true, "product": "FWTR00 remote control"}
+{"q": "The display shows SERVICE TIME, what does it mean?", "doc_code": "H072510EN0", "pages": [26], "lang": "en", "type": "code", "product": "FWTR00 remote control"}
+{"q": "Sul display compare EMPTY HOPPER, cosa devo fare?", "doc_code": "H072510EN0", "pages": [26], "lang": "it", "type": "code", "cross": true, "product": "FWTR00 remote control"}
+# --- more code / identifier questions (added for the hybrid benchmark)
+{"q": "Cosa significa il warning E13?", "doc_code": "H072510EN0", "pages": [29], "lang": "it", "type": "code", "cross": true, "product": "FWTR00 remote control"}
+{"q": "What does warning E16 mean?", "doc_code": "H072510EN0", "pages": [30], "lang": "en", "type": "code", "product": "FWTR00 remote control"}
+{"q": "Il display mostra LOW FUEL: cosa significa?", "doc_code": "H072510EN0", "pages": [25], "lang": "it", "type": "code", "cross": true, "product": "FWTR00 remote control"}
+{"q": "What does the message RESTART POWER FAILURE mean?", "doc_code": "H072510EN0", "pages": [26], "lang": "en", "type": "code", "product": "FWTR00 remote control"}
+{"q": "A quale prodotto corrisponde il tipo SP181-01?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "code", "product": "P985 Thermo"}
+{"q": "Qual è il numero della dichiarazione di prestazioni H07900196?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "code", "product": "P985 Thermo"}
+{"q": "Rapporto di prova K 1588 2015 Z1: a quale stufa si riferisce?", "doc_code": "H072521IT0", "pages": [10], "lang": "it", "type": "code", "product": "P985 Thermo"}
+{"q": "FROST WARNING message on the display", "doc_code": "H072510EN0", "pages": [26], "lang": "en", "type": "code", "product": "FWTR00 remote control"}
