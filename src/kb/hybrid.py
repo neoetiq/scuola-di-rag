@@ -11,12 +11,13 @@ import argparse
 import json
 import logging
 import time
+import uuid
 from pathlib import Path
 
 import numpy as np
 from qdrant_client import QdrantClient, models
 
-from kb.chunk import load_corpus
+from kb.chunk import build_corpus
 from kb.config import EVAL_DIR, ROOT
 from kb.embeddings import get_embeddings
 from kb.evaluate import is_hit, load_questions
@@ -25,6 +26,7 @@ from kb.sparse import BGEM3Encoder, FastembedSparse, Qwen3Reranker, Reranker, Sp
 log = logging.getLogger("kb.hybrid")
 QDRANT_PATH = ROOT / "data" / "qdrant"
 SPARSE_NAMES = ("bge_sparse", "bm25", "splade")
+PARENTS = "parents"  # payload-only collection: the parent-document docstore
 SPLADE = "prithivida/Splade_PP_en_v1"
 
 # name -> (dense collection, sparse branches, rerank)
@@ -48,46 +50,85 @@ def _sv(v: SparseVec) -> models.SparseVector:
 
 
 class Encoders:
+    """Encoders are loaded lazily, so a BGE-only pipeline never loads Qwen3-4B (and vice versa)."""
+
     def __init__(self, reranker: str = "bge"):
         self.reranker_name = reranker
-        self.bge = BGEM3Encoder()
-        self.qwen = get_embeddings("qwen3-4b")
-        self.bm25 = FastembedSparse("Qdrant/bm25")
-        self.splade = FastembedSparse(SPLADE)
-        self._reranker: Reranker | None = None
+        self._cache: dict[str, object] = {}
+
+    def _get(self, key: str, factory):
+        if key not in self._cache:
+            self._cache[key] = factory()
+        return self._cache[key]
 
     @property
-    def reranker(self) -> Reranker:
-        if self._reranker is None:
-            self._reranker = Qwen3Reranker() if self.reranker_name == "qwen" else Reranker()
-        return self._reranker
+    def bge(self) -> BGEM3Encoder:
+        return self._get("bge", BGEM3Encoder)
 
-    def encode_query(self, q: str) -> dict:
-        d, s = self.bge.encode([q])
-        return {
-            "bge": d[0].tolist(),
-            "qwen": self.qwen.embed_query(q),
-            "bge_sparse": _sv(s[0]),
-            "bm25": _sv(self.bm25.encode([q], query=True)[0]),
-            "splade": _sv(self.splade.encode([q])[0]),
-        }
+    @property
+    def qwen(self):
+        return self._get("qwen", lambda: get_embeddings("qwen3-4b"))
+
+    @property
+    def bm25(self) -> FastembedSparse:
+        return self._get("bm25", lambda: FastembedSparse("Qdrant/bm25"))
+
+    @property
+    def splade(self) -> FastembedSparse:
+        return self._get("splade", lambda: FastembedSparse(SPLADE))
+
+    @property
+    def reranker(self):
+        return self._get("reranker", lambda: Qwen3Reranker() if self.reranker_name == "qwen" else Reranker())
+
+    def release(self, key: str) -> None:
+        """Drop a loaded model and give its memory back (it is reloaded lazily if needed again)."""
+        import gc
+
+        import torch
+
+        self._cache.pop(key, None)
+        gc.collect()
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+
+    def encode_query(self, q: str, needed: set[str]) -> dict:
+        out: dict = {}
+        if needed & {"bge", "bge_sparse"}:
+            d, sp = self.bge.encode([q])
+            out["bge"], out["bge_sparse"] = d[0].tolist(), _sv(sp[0])
+        if "qwen" in needed:
+            out["qwen"] = self.qwen.embed_query(q)
+        if "bm25" in needed:
+            out["bm25"] = _sv(self.bm25.encode([q], query=True)[0])
+        if "splade" in needed:
+            out["splade"] = _sv(self.splade.encode([q])[0])
+        return out
+
+
+def parent_point_id(parent_id: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, parent_id))
 
 
 def build_collections(client: QdrantClient, enc: Encoders, extractor: str, force: bool = False) -> list:
-    docs = load_corpus(extractor)
+    docs, parents = build_corpus(extractor)
     texts = [d.page_content for d in docs]
     existing = {c.name for c in client.get_collections().collections}
-    if {"bge", "qwen"} <= existing and not force:
+    if {"bge", "qwen", PARENTS} <= existing and not force:
         log.info("reusing Qdrant collections (%d chunks)", client.count("bge").count)
         return docs
+    # One model in memory at a time: sparse (ONNX, CPU) first, then each dense model, released after use.
     t0 = time.time()
-    bge_dense, bge_sparse = enc.bge.encode(texts)
-    log.info("bge-m3 dense+sparse: %.0fs", time.time() - t0); t0 = time.time()
-    qwen_dense = np.array(enc.qwen.embed_documents(texts))
-    log.info("qwen3-4b dense: %.0fs", time.time() - t0); t0 = time.time()
     bm25 = enc.bm25.encode(texts)
     splade = enc.splade.encode(texts)
-    log.info("bm25 + splade: %.0fs", time.time() - t0)
+    enc.release("splade")
+    log.info("bm25 + splade: %.0fs", time.time() - t0); t0 = time.time()
+    bge_dense, bge_sparse = enc.bge.encode(texts)
+    enc.release("bge")
+    log.info("bge-m3 dense+sparse: %.0fs", time.time() - t0); t0 = time.time()
+    qwen_dense = np.array(enc.qwen.embed_documents(texts))
+    enc.release("qwen")
+    log.info("qwen3-4b dense: %.0fs", time.time() - t0)
     for name, dense in (("bge", bge_dense), ("qwen", qwen_dense)):
         if name in existing:
             client.delete_collection(name)
@@ -107,7 +148,31 @@ def build_collections(client: QdrantClient, enc: Encoders, extractor: str, force
         for j in range(0, len(points), 64):
             client.upsert(name, points[j : j + 64])
         log.info("collection %s: %d points", name, len(points))
+
+    # parent-document docstore: no vectors, looked up by id (uuid5 of parent_id)
+    if PARENTS in existing:
+        client.delete_collection(PARENTS)
+    client.create_collection(PARENTS, vectors_config={})
+    ppoints = [models.PointStruct(id=parent_point_id(p.parent_id), vector={}, payload=p.payload()) for p in parents]
+    for j in range(0, len(ppoints), 64):
+        client.upsert(PARENTS, ppoints[j : j + 64])
+    log.info("collection %s: %d parents", PARENTS, len(ppoints))
     return docs
+
+
+def fetch_parents(client: QdrantClient, hits: list[dict], max_parents: int | None = None) -> list[dict]:
+    """Aggregate retrieved chunks into their parent documents, best-ranked parent first.
+    Each parent payload gets ``hit_chunks`` (how many retrieved chunks fall in it) and ``best_rank``."""
+    order: dict[str, dict] = {}
+    for rank, h in enumerate(hits, 1):
+        pid = h.get("parent_id")
+        if not pid:
+            continue
+        info = order.setdefault(pid, {"best_rank": rank, "hit_chunks": 0})
+        info["hit_chunks"] += 1
+    ids = list(order)[:max_parents] if max_parents else list(order)
+    found = {p.payload["parent_id"]: p.payload for p in client.retrieve(PARENTS, ids=[parent_point_id(i) for i in ids])}
+    return [found[i] | order[i] for i in ids if i in found]
 
 
 def search(
@@ -115,7 +180,7 @@ def search(
     doc_filter: models.Filter | None = None,
 ) -> list[dict]:
     coll, sparse_branches, rerank = PIPELINES[pipeline]
-    qv = enc.encode_query(q)
+    qv = enc.encode_query(q, ({coll} if rerank is not None else set()) | set(sparse_branches))
     branches = []
     if rerank is not None:  # dense branch included (None = sparse-only pipelines)
         branches.append(models.Prefetch(query=qv[coll], using="dense", limit=prefetch, filter=doc_filter))

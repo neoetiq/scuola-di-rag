@@ -52,11 +52,30 @@ Pulizia comune a entrambi (`src/kb/clean.py`): rimozione header/footer ripetuti,
 avvertenza del font simbolico mappate a `[!DANGER]` / `[!WARNING]` / `[!INFO]`, sillabazione,
 normalizzazione dei livelli dei titoli in base alla numerazione (`1` -> `#`, `1.2` -> `##`, `1.2.3` -> `###`).
 
-## 2. Chunking
+## 2. Parent document e chunking
 
-`src/kb/chunk.py`: split per titoli Markdown, poi per dimensione (1200 caratteri, overlap 150).
-Ogni chunk è prefissato dal breadcrumb `titolo > capitolo > sezione` e porta metadata
-`doc_code`, `language`, `page_start`, `page_end`, `section`.
+`src/kb/parents.py` ricava dal Markdown la struttura a capitoli e sezioni e costruisce i **parent document**:
+
+- un capitolo intero è un parent se sta in `PARENT_MAX_TOKENS` (2000), altrimenti lo sono le sue sezioni;
+- le sezioni sotto `PARENT_MIN_TOKENS` (100) vengono accorpate alla vicina (titolo "2.2, 2.3 A / B");
+- i parent ancora troppo grandi (capitoli senza sezioni numerate) sono divisi in parti sui sottotitoli;
+- stili di titolazione gestiti: "N TITOLO" / "N.M TITOLO", "N.0 TITOLO", titoli maiuscoli non numerati;
+  le voci di legenda numerate ("2 LED") sono scartate perché i capitoli devono essere in sequenza.
+
+Sul corpus attuale: 528 parent, mediana 436 token, massimo 1989, copertura del testo 100%.
+
+`src/kb/chunk.py` genera i chunk **dentro** ciascun parent (1200 caratteri, overlap 150), quindi un chunk non
+attraversa mai il confine di una sezione. Ogni chunk porta nei metadata, oltre a `doc_code`, `language`,
+`page_start`, `page_end`, `section`:
+
+`parent_id`, `parent_title`, `parent_tokens`, `parent_page_start`, `parent_page_end`, `chapter_no`,
+`chapter_title`, `section_no`, `section_title`, `chunk_in_parent`.
+
+I file Markdown non vengono divisi e i parent non si leggono tramite offset: il testo di ogni parent è salvato
+in un **docstore con chiave `parent_id`**, la collection Qdrant `parents` (solo payload, senza vettori).
+`char_start` / `char_end` nel payload del parent restano come provenienza verso il Markdown.
+I chunk di copertina e indice non sono indicizzati (`INDEX_FRONT_MATTER = False`): l'indice elenca tutti i
+titoli e attira i rami lessicali senza contenere risposte. Il parent corrispondente resta nel docstore.
 
 ## 3. Indici ed embedding
 
@@ -81,13 +100,16 @@ accodati in `eval/results.jsonl`.
 ## 5. Test interattivo della qualità di estrazione
 
 ```bash
-uv run kb-query                                  # corpus docling, modello bge-m3, 3 chunk
-uv run kb-query --extractor mineru --model qwen3-4b -k 5
+uv run kb-query                                   # Qdrant, BGE-M3 dense+sparse (A1), primi 3 chunk
+uv run kb-query --parents                         # stessi risultati aggregati in parent document
+uv run kb-query --parents --doc H072521IT0 -k 2   # filtro sul manuale, 2 parent
+uv run kb-query --pipeline B1                     # altra catena (A0, A1, A2, B0, B1, B1m, B2, B2m)
+uv run kb-query --engine chroma --model qwen3-4b  # vecchi indici Chroma, solo dense
 ```
 
-Chiede una domanda, mostra i primi chunk recuperati (punteggio, manuale, pagina, sezione, testo) e
-ripete. `quit` per uscire. Cambiando `--extractor` si confronta a occhio la qualità dei diversi
-estrattori sugli stessi quesiti.
+Chiede una domanda, mostra i risultati e ripete; `quit` per uscire. Con `--parents` recupera `--chunks`
+chunk (default 10), li raggruppa per `parent_id` e mostra i primi `-k` parent con numero di chunk trovati,
+miglior rango, pagine, token e testo, più il totale di token di contesto.
 
 ## 6. Ricerca singola
 
@@ -216,3 +238,20 @@ Conclusioni:
 - I rami sparse da soli sono deboli (MRR 0.47-0.54) ma sui codici fanno la differenza: BM25 e BGE-M3 sparse
   portano l'MRR sui codici a 1.000 nelle catene ibride con filtro.
 - Qwen3-Embedding non ha vettori sparse: nella catena B il lessicale è BM25 (fastembed, senza stemming).
+
+### Dopo l'introduzione dei parent document (1905 chunk, 528 parent)
+
+Il chunking ora rispetta i confini di sezione e non indicizza copertina e indice. Controllo di regressione (MRR):
+
+| catena | filter prima | filter dopo | product prima | product dopo |
+|---|---|---|---|---|
+| A0 BGE-M3 dense | 0.975 | 0.966 | 0.864 | 0.884 |
+| A1 BGE-M3 dense + sparse, RRF | 0.969 | 0.974 | 0.831 | 0.896 |
+| B0 Qwen3-4B dense | 0.948 | 0.939 | 0.857 | 0.860 |
+| B1 Qwen3-4B + BM25 + SPLADE, RRF | 0.944 | 0.907 | 0.756 | 0.709 |
+
+Le catene BGE-M3 migliorano o restano uguali, Qwen dense è invariato, la catena con BM25 + SPLADE peggiora:
+ora che anche P961 e Fulvia hanno capitoli riconosciuti, i loro chunk competono di più sui rami lessicali.
+
+L'ingestione carica un modello alla volta (sparse ONNX, poi BGE-M3, poi Qwen3-4B con batch 4) e rilascia la
+memoria Metal tra le fasi: tenendoli tutti in memoria il processo veniva terminato dal sistema (exit 137).

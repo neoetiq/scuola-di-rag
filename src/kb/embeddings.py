@@ -26,7 +26,7 @@ def get_embeddings(name_or_spec: str, device: str = "mps", batch_size: int = 16)
         emb = HuggingFaceEmbeddings(
             model_name=model,
             model_kwargs=model_kwargs,
-            encode_kwargs={"normalize_embeddings": True, "batch_size": batch_size},
+            encode_kwargs={"normalize_embeddings": True, "batch_size": 4 if big else batch_size},
             query_encode_kwargs={"normalize_embeddings": True, "prompt": prefix} if prefix else {"normalize_embeddings": True},
         )
         emb._client.max_seq_length = min(emb._client.max_seq_length or 2048, 2048)
